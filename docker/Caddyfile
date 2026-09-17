@@ -1,0 +1,27 @@
+# One host: the tool itself. Caddy obtains and renews TLS automatically.
+#
+# There is no second media host. Deliverables live in the client's Drive, and
+# the few files this system does store - client logos, moodboards - are served
+# through the app so the same access rules apply to them.
+
+{$APP_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy web:3000
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	# The public booking confirmation is meant to survive a WhatsApp forward,
+	# so it is deliberately not behind the frame/referrer rules being relaxed
+	# anywhere - it is just a normal page with an unguessable token.
+
+	log {
+		output file /var/log/caddy/app.log
+		format json
+	}
+}

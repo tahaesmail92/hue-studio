@@ -1,0 +1,41 @@
+{
+  "name": "hue-studio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "worker": "node --env-file-if-exists=.env worker/index.ts",
+    "db:migrate": "node --env-file-if-exists=.env db/migrate.mjs",
+    "db:seed": "node --env-file-if-exists=.env db/seed.mjs",
+    "dev:db": "node db/dev-db.mjs",
+    "test": "node --test \"db/tests/*.test.mjs\"",
+    "test:db": "node --test db/tests/schema.test.mjs"
+  },
+  "dependencies": {
+    "@node-rs/argon2": "^2.0.2",
+    "@react-pdf/renderer": "^4.3.1",
+    "next": "16.3.4",
+    "pg": "^8.13.1",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "server-only": "^0.0.1",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@electric-sql/pglite-socket": "^0.2.11",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^24",
+    "@types/pg": "^8.11.10",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.4",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

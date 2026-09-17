@@ -1,0 +1,14 @@
+# The background worker: the job queue consumer that sends every email and
+# raises every reminder. No ffmpeg - deliverables are Drive links, and the
+# only media this system stores are client logos and moodboard files.
+FROM node:24-alpine
+WORKDIR /app
+RUN addgroup -S app && adduser -S app -G app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+COPY worker ./worker
+COPY db ./db
+COPY lib ./lib
+ENV NODE_ENV=production
+USER app
+CMD ["node", "worker/index.ts"]

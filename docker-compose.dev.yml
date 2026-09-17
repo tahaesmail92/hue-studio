@@ -1,0 +1,20 @@
+# Local Postgres for anyone who would rather use Docker than PGlite.
+#
+#   docker compose -f docker-compose.dev.yml up -d
+#
+# `npm run dev:db` does the same job without Docker and is the default.
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hue
+      POSTGRES_PASSWORD: hue
+      POSTGRES_DB: hue_studio
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata_dev:/var/lib/postgresql/data
+
+volumes:
+  pgdata_dev:

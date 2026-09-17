@@ -1,0 +1,8 @@
+node_modules
+.next
+.git
+.media
+.backups
+.env
+.env.local
+*.tsbuildinfo

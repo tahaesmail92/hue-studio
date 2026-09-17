@@ -1,0 +1,97 @@
+# Production stack for the Hostinger VPS. One box, four services.
+#
+#   docker compose up -d --build
+#   docker compose exec web node db/migrate.mjs
+#   docker compose exec web node db/seed.mjs admin@huecreative.agency "Full Name"
+#
+# The seed prints an invite link. Open it to set the first password - no
+# password is ever generated or emailed, here or anywhere else in this system.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-hue}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-hue_studio}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-hue} -d ${POSTGRES_DB:-hue_studio}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Never published to the host: only the app and the worker reach it.
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-hue}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-hue_studio}
+      MEDIA_ROOT: /srv/media
+    volumes:
+      - media:/srv/media
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-hue}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-hue_studio}
+      MEDIA_ROOT: /srv/media
+    volumes:
+      - media:/srv/media
+    # Reminders and confirmation emails are in flight here, so the worker gets
+    # time to finish the job it holds rather than being killed mid-send.
+    stop_grace_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?set APP_DOMAIN in .env}
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+      - caddy_logs:/var/log/caddy
+    depends_on:
+      - web
+
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER:-hue}
+      POSTGRES_DB: ${POSTGRES_DB:-hue_studio}
+    volumes:
+      - ./docker/backup.sh:/backup.sh:ro
+      - backups:/backups
+    entrypoint: ["/bin/sh", "/backup.sh"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  media:
+  backups:
+  caddy_data:
+  caddy_config:
+  caddy_logs:
