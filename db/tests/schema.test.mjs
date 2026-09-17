@@ -304,6 +304,39 @@ test("only a person resource carries a craft or a login", async () => {
   await db.close();
 });
 
+test("a reminder can only be claimed once", async () => {
+  const db = await freshDatabase();
+  const cast = await seedCast(db);
+  const shoot = await makeShoot(db, cast, {
+    title: "Tomorrow",
+    startsAt: "2026-10-07T09:00:00Z",
+    endsAt: "2026-10-07T12:00:00Z",
+  });
+
+  const claim = async () => {
+    const result = await db.query(
+      `insert into shoot_reminders (shoot_id, offset_hours) values ($1, 24)
+       on conflict do nothing returning shoot_id`,
+      [shoot.id],
+    );
+    return result.rows.length === 1;
+  };
+
+  // The job queue's dedupe key frees the moment a job finishes, so without
+  // this table the scheduler re-sends the same reminder on every tick.
+  assert.equal(await claim(), true, "the first claim must win");
+  assert.equal(await claim(), false, "a second claim must find it taken");
+
+  // A different offset is a different reminder and is still allowed.
+  const other = await db.query(
+    `insert into shoot_reminders (shoot_id, offset_hours) values ($1, 2)
+     returning shoot_id`,
+    [shoot.id],
+  );
+  assert.equal(other.rows.length, 1);
+  await db.close();
+});
+
 test("a user has at most one live invite per kind", async () => {
   const db = await freshDatabase();
   const created = await db.query(

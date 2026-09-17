@@ -19,6 +19,7 @@ import {
   type Job,
 } from "../lib/db/repo/jobs.ts";
 import { runJob } from "../lib/queue/handlers.ts";
+import { scheduleReminders } from "../lib/queue/reminders.ts";
 
 const WORKER_ID = `${process.env.HOSTNAME ?? "worker"}-${randomUUID().slice(0, 8)}`;
 const TICK_MS = Number(process.env.WORKER_TICK_MS ?? 60_000);
@@ -65,6 +66,11 @@ async function tick(): Promise<void> {
     if (stopping) break;
     await handle(job);
   }
+
+  // Noticing that a shoot is tomorrow is the other thing a web request cannot
+  // do. Safe every tick: the dedupe key makes a second pass a no-op.
+  const reminders = await scheduleReminders();
+  if (reminders > 0) console.info(`[worker] queued ${reminders} reminder(s)`);
 
   await scheduleHousekeeping();
 }

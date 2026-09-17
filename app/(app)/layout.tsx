@@ -1,4 +1,5 @@
-import { getT, LOCALE_COOKIE } from "@/lib/i18n";
+import { LOCALE_COOKIE } from "@/lib/i18n";
+import { getT } from "@/lib/i18n/server";
 import { requireUser } from "@/lib/auth/session";
 import { navFor } from "@/lib/nav";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";

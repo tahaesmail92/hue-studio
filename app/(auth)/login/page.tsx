@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getT } from "@/lib/i18n";
+import { getT } from "@/lib/i18n/server";
 import { currentUser, homeFor } from "@/lib/auth/session";
 import { getSettings } from "@/lib/db/repo/settings";
 import { LoginForm } from "./login-form";

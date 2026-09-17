@@ -123,6 +123,14 @@ request, so a provider outage retries instead of losing a confirmation. Without
 carries on — local development never blocks on a mail provider, and in
 production a missing key shows up in the log rather than as a crash.
 
+### Reminders fire once
+
+The job queue's dedupe key cannot express "already sent": that index only
+covers pending and running rows, so it frees the instant a job completes and
+the next tick would queue the same reminder again — once a minute, all day, to
+a client. `shoot_reminders` is the durable record instead, claimed *before*
+the send, so a crash mid-send drops a reminder rather than repeating it.
+
 ### Client-facing modules must not import the pool
 
 `eslint.config.mjs` forbids `app/**` and `components/**` from importing
@@ -156,5 +164,13 @@ step** — a backup that only exists on the machine it protects is not a backup.
 
 ## Status
 
-M0 and the data model are in. Shoot request and approval, the calendar and
-resource timeline, crew handover, reminders and reports follow — see the plan.
+Complete and walked end to end: a client submits, production approves with
+crew and studio assigned, the client receives a formal confirmation as a PDF
+and a link that opens without signing in, the crew work from a call sheet, the
+files are handed over as Drive links, and the client approves the final cut.
+Double booking is refused by Postgres, and reports cover volume, crew load and
+the reshoot rate.
+
+Not built, deliberately: recurring shoots as a real recurrence rule (v1
+generates the shoots up front), WhatsApp notifications, and Google Calendar
+sync.

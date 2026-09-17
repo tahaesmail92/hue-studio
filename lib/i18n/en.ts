@@ -1,7 +1,7 @@
 import type { Dictionary } from "./ar.ts";
 
 // Typed against the Arabic dictionary: a key added there and forgotten here
-// fails `tsc`, so the two can never drift apart silently.
+// fails `tsc`, so the two cannot drift apart silently.
 export const en: Dictionary = {
   localeName: "English",
 
@@ -25,6 +25,7 @@ export const en: Dictionary = {
     yes: "Yes",
     no: "No",
     loading: "Loading…",
+    saving: "Saving…",
     saved: "Saved",
     required: "Required",
     optional: "Optional",
@@ -45,6 +46,21 @@ export const en: Dictionary = {
     themeLight: "Light theme",
     signOut: "Sign out",
     nothingHere: "Nothing here yet",
+    open: "Open",
+    close: "Close",
+    confirm: "Confirm",
+    reject: "Reject",
+    send: "Send",
+    download: "Download",
+    print: "Print",
+    copy: "Copy",
+    copied: "Copied",
+    createdAt: "Created",
+    total: "Total",
+    never: "Never",
+    active: "Active",
+    suspended: "Suspended",
+    view: "View",
   },
 
   auth: {
@@ -96,6 +112,16 @@ export const en: Dictionary = {
     client: "Client",
   },
 
+  dashboard: {
+    pendingRequests: "Requests awaiting review",
+    todayShoots: "Shooting today",
+    upcoming: "Coming up",
+    thisMonth: "Shoots this month",
+    awaitingDelivery: "Awaiting delivery",
+    nothingToday: "Nothing shooting today.",
+    allClear: "No requests waiting. All clear.",
+  },
+
   shoot: {
     one: "Shoot",
     many: "Shoots",
@@ -106,13 +132,15 @@ export const en: Dictionary = {
     client: "Client",
     requestedDate: "Preferred date",
     requestedTime: "Preferred time",
-    scheduled: "Confirmed slot",
+    requestedNotes: "Request details",
+    scheduled: "Agreed slot",
     startsAt: "Starts",
     endsAt: "Ends",
     setupMinutes: "Setup (minutes)",
     teardownMinutes: "Teardown (minutes)",
     duration: "Duration",
-    crew: "Crew and resources",
+    crew: "Crew",
+    resources: "Booked resources",
     location: "Location",
     address: "Address",
     mapUrl: "Map link",
@@ -122,11 +150,31 @@ export const en: Dictionary = {
     products: "Products to shoot",
     moodboard: "Reference / moodboard",
     reshootOf: "Reshoot of",
-    reshootReason: "Reason for reshoot",
+    reshootReason: "Reason for the reshoot",
+    isReshoot: "This is a reshoot request",
     timeline: "Timeline",
     confirmation: "Booking confirmation",
     callSheet: "Call sheet",
     downloadPdf: "Download PDF",
+    publicLink: "Confirmation link",
+    publicLinkHint: "Opens without signing in — safe to forward on WhatsApp.",
+    approve: "Approve and confirm",
+    reject: "Reject request",
+    rejectReason: "Reason (the client will see this)",
+    reschedule: "Reschedule",
+    rescheduleNote: "Reason for the change",
+    markInProgress: "Start shooting",
+    markCompleted: "Shooting finished",
+    cancel: "Cancel shoot",
+    cancelReason: "Reason for cancelling",
+    addNote: "Add an internal note",
+    noteHint: "Internal notes are never shown to the client.",
+    requestedBy: "Submitted by",
+    newFor: "Request a shoot for",
+    submitRequest: "Send request",
+    submitted: "We have your request. We will review it and come back with a confirmation.",
+    noShoots: "No shoots yet.",
+    briefHint: "Only the shoot name is required. Leave anything else blank and we will fill it in with you.",
   },
 
   shootKind: {
@@ -136,9 +184,9 @@ export const en: Dictionary = {
   },
 
   shootStatus: {
-    pending: "Awaiting approval",
+    pending: "Awaiting review",
     confirmed: "Confirmed",
-    in_progress: "In progress",
+    in_progress: "Shooting",
     completed: "Shot",
     delivered: "Delivered",
     cancelled: "Cancelled",
@@ -157,6 +205,12 @@ export const en: Dictionary = {
     craft: "Craft",
     linkedAccount: "Linked account",
     active: "Active",
+    retire: "Retire",
+    retired: "Retired",
+    add: "Add a resource",
+    namePlaceholder: "e.g. Studio A, or Sony FX3",
+    none: "No resources yet. Add your photographers, studios and kit first.",
+    hint: "A photographer, a studio and a camera are all resources — that is what stops any of them being booked twice.",
   },
 
   resourceKind: {
@@ -174,6 +228,7 @@ export const en: Dictionary = {
   client: {
     one: "Client",
     many: "Clients",
+    add: "Add a client",
     company: "Company",
     sector: "Sector",
     logo: "Logo",
@@ -185,10 +240,16 @@ export const en: Dictionary = {
     visitsWeek: "This week",
     visitsMonth: "This month",
     visitsYear: "This year",
+    byYear: "Shoots by year",
     invite: "Send invite",
     reinvite: "Resend invite",
     inviteSent: "Invite sent.",
+    inviteWaiting: "Invited — waiting for them to activate",
     contacts: "Contacts",
+    addContact: "Add a contact",
+    contactHint: "They get an invite link and choose their own password.",
+    none: "No clients yet.",
+    file: "Client file",
   },
 
   clientStatus: {
@@ -197,16 +258,31 @@ export const en: Dictionary = {
     archived: "Archived",
   },
 
+  crewPage: {
+    add: "Add a crew member",
+    hint: "Creates both their login and the resource they get booked on.",
+    none: "No crew yet.",
+    myShoots: "My shoots",
+    noShoots: "You are not booked on anything right now.",
+  },
+
   deliverable: {
     many: "Deliverables",
     raw: "Raw footage",
     final: "Final approved cut",
     url: "Drive link",
+    urlHint: "Check the sharing permissions before pasting the link.",
     label: "Short description",
-    visibleToClient: "Visible to client",
-    approve: "Approve final cut",
-    approved: "Approved",
+    add: "Add a link",
+    visibleToClient: "Visible to the client",
+    hidden: "Hidden from the client",
+    approve: "Approve the final cut",
+    approved: "Approved by the client",
+    approveHint: "Approving closes the shoot and records the date.",
     rate: "Rate this shoot",
+    rateNote: "A note on your rating (optional)",
+    none: "Nothing shared yet.",
+    waiting: "Still being worked on. We will email you as soon as it is ready.",
   },
 
   event: {
@@ -218,9 +294,10 @@ export const en: Dictionary = {
     status_changed: "Status changed",
     cancelled: "Cancelled",
     rejected: "Rejected",
-    delivered: "Deliverables shared",
+    delivered: "Files shared",
     approved: "Client approved the final cut",
     note: "Note",
+    reminder: "Shoot reminder",
   },
 
   conflict: {
@@ -228,18 +305,59 @@ export const en: Dictionary = {
     busy: "{resource} is already booked at this time on {shoot}.",
     blocked: "This shoot cannot be confirmed: one of the chosen resources is already booked.",
     checking: "Checking for conflicts…",
-    clear: "No conflicts.",
+    clear: "Nothing clashes with this slot.",
+    pickAnother: "Pick a different time, or different resources.",
+  },
+
+  calendar: {
+    title: "Shoot calendar",
+    monthView: "Month",
+    dayView: "Day",
+    noneThisMonth: "Nothing scheduled this month.",
+    resourceTimeline: "Resource schedule",
+    timelineHint: "One row per resource. An overlap within a row is a clash.",
+    free: "Free",
   },
 
   settings: {
     company: "Company details",
+    companyName: "Company name",
     workingHours: "Working hours",
+    workingHoursHint: "The days and hours a client sees when proposing a slot.",
     blackouts: "Closed days",
+    blackoutsHint: "Public holidays, or days the studio is shut.",
+    addBlackout: "Add a closed day",
+    reason: "Reason",
     defaults: "Defaults",
+    setupDefault: "Default setup (minutes)",
+    teardownDefault: "Default teardown (minutes)",
+    durationDefault: "Default shoot length (minutes)",
     reminders: "Reminders",
-    reminderOffsets: "Remind this many hours before",
+    reminderOffsets: "Remind this many hours before (comma separated)",
     allowSelfReset: "Let people reset their own password",
+    allowSelfResetHint: "Turn this off and only you can send reset links.",
     closed: "Closed",
+  },
+
+  reports: {
+    title: "Reports",
+    period: "Period",
+    byClient: "Shoots by client",
+    crewLoad: "Crew load",
+    totals: "Summary",
+    requested: "Requests",
+    completionRate: "Completion rate",
+    reshootRate: "Reshoot rate",
+    reshootRateHint: "How often work had to be redone. The clearest quality signal here.",
+    hours: "Shooting hours",
+    reshoots: "Reshoots",
+    cancelled: "Cancelled",
+    completed: "Completed",
+    export: "Export CSV",
+    noData: "No data for this period.",
+    thisMonth: "This month",
+    thisYear: "This year",
+    last30: "Last 30 days",
   },
 
   weekday: {
@@ -250,6 +368,16 @@ export const en: Dictionary = {
     "4": "Thursday",
     "5": "Friday",
     "6": "Saturday",
+  },
+
+  weekdayShort: {
+    "0": "Sun",
+    "1": "Mon",
+    "2": "Tue",
+    "3": "Wed",
+    "4": "Thu",
+    "5": "Fri",
+    "6": "Sat",
   },
 
   month: {
@@ -263,5 +391,9 @@ export const en: Dictionary = {
     forbidden: "You do not have access to this.",
     notFound: "Not found.",
     emailTaken: "That email is already registered.",
+    invalidUrl: "That does not look like a valid link.",
+    pickResource: "Pick at least one resource.",
+    pickTime: "Set a start and an end time.",
+    endBeforeStart: "The end time has to be after the start.",
   },
 };

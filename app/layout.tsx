@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { themeScript } from "@/lib/theme";
-import { getT } from "@/lib/i18n";
+import { getT } from "@/lib/i18n/server";
 import "./globals.css";
 
 export const metadata: Metadata = {

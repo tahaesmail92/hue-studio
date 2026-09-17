@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { getT, fill } from "@/lib/i18n";
+import { fill } from "@/lib/i18n";
+import { getT } from "@/lib/i18n/server";
 import { findInvite } from "@/lib/db/repo/invites";
 import { MIN_PASSWORD_LENGTH } from "@/lib/auth/password";
 import { Notice } from "@/components/ui";

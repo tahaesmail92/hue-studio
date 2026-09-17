@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { getT } from "@/lib/i18n";
+import { getT } from "@/lib/i18n/server";
 import { verifyPassword } from "@/lib/auth/password";
 import { clientIp, homeFor, LOCKOUT, startSession } from "@/lib/auth/session";
 import { findByEmailForLogin, markLogin } from "@/lib/db/repo/users";

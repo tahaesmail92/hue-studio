@@ -1,11 +1,14 @@
-// Reading the active locale, and the helpers that format in it.
+// The dictionaries and the helpers that format in them.
+//
+// Deliberately free of any Next.js import: the background worker renders the
+// same emails this module's strings feed, and it is a plain Node process that
+// cannot load next/headers. Reading the ACTIVE locale lives in ./server.ts.
 //
 // The dictionary is plain data on purpose: a Server Component reads it
 // directly, and a Client Component receives the strings it needs as props.
 // Importing data out of a "use client" module into a Server Component hands
 // the server a client reference instead of the value - a whole app has gone
 // down that way before.
-import { cookies } from "next/headers";
 import type { Locale } from "../types.ts";
 import { ar, type Dictionary } from "./ar.ts";
 import { en } from "./en.ts";
@@ -25,23 +28,6 @@ export function isLocale(value: unknown): value is Locale {
 
 export function dirFor(locale: Locale): "rtl" | "ltr" {
   return locale === "ar" ? "rtl" : "ltr";
-}
-
-/**
- * The cookie is the single source of truth per request. It is written at login
- * from the user's stored preference and whenever they use the switcher, so a
- * signed-out page and a signed-in one agree without a database read.
- */
-export async function getLocale(): Promise<Locale> {
-  const jar = await cookies();
-  const value = jar.get(LOCALE_COOKIE)?.value;
-  if (isLocale(value)) return value;
-  return process.env.DEFAULT_LOCALE === "en" ? "en" : "ar";
-}
-
-export async function getT(): Promise<{ locale: Locale; t: Dictionary; dir: "rtl" | "ltr" }> {
-  const locale = await getLocale();
-  return { locale, t: dictionaryFor(locale), dir: dirFor(locale) };
 }
 
 /** Fills {placeholders} in a dictionary string. */

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getT } from "@/lib/i18n";
+import { getT } from "@/lib/i18n/server";
 import { getSettings } from "@/lib/db/repo/settings";
 import { ForgotForm } from "./forgot-form";
 import { requestResetAction } from "../actions";

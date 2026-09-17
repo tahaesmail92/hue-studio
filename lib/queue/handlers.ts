@@ -1,5 +1,6 @@
 import type { Job } from "../db/repo/jobs.ts";
 import { runHousekeeping } from "./housekeeping.ts";
+import { sendReminder } from "./reminders.ts";
 import { sendEmail, type Message } from "../mail/send.ts";
 
 /**
@@ -14,10 +15,16 @@ export async function runJob(job: Job): Promise<void> {
     case "send_email":
       return sendQueuedEmail(job);
 
-    case "shoot_reminder":
-      // Raised by the scheduler once per reminder offset. Filled in with the
-      // reminder templates - the queue plumbing it rides on is already here.
-      throw new Error("shoot_reminder has no handler yet");
+    case "shoot_reminder": {
+      const { shootId, hoursBefore } = job.payload as {
+        shootId?: string;
+        hoursBefore?: number;
+      };
+      if (!shootId || typeof hoursBefore !== "number") {
+        throw new Error("shoot_reminder payload is incomplete");
+      }
+      return sendReminder(shootId, hoursBefore);
+    }
 
     case "housekeeping":
       return runHousekeeping();
