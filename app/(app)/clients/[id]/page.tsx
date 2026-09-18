@@ -3,9 +3,11 @@ import { formatDate } from "@/lib/i18n";
 import { getT } from "@/lib/i18n/server";
 import { requirePageRole } from "@/lib/auth/session";
 import { clientContacts, getClient, visitCounts, visitsByYear } from "@/lib/db/repo/clients";
+import { impactOfDeletingClient } from "@/lib/db/repo/purge";
 import { listShoots } from "@/lib/db/repo/shoots";
 import { whenLine } from "@/lib/shoot-view";
 import { ActionButton, ActionForm } from "@/components/ActionForm";
+import { DangerZone } from "@/components/DangerZone";
 import { ShootRow } from "@/components/shoot-bits";
 import {
   Card,
@@ -24,6 +26,7 @@ import {
   resendInviteAction,
   updateClientAction,
 } from "../actions";
+import { deleteClientAction } from "../../danger-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +41,8 @@ export default async function ClientFilePage({
 
   const client = await getClient(ctx, id);
   if (!client) notFound();
+
+  const impact = ctx.role === "admin" ? await impactOfDeletingClient(ctx, id) : null;
 
   const [contacts, counts, byYear, shoots] = await Promise.all([
     clientContacts(ctx, id),
@@ -195,6 +200,35 @@ export default async function ClientFilePage({
             </Field>
           </ActionForm>
         </Card>
+
+        {impact ? (
+          <DangerZone
+            action={deleteClientAction}
+            hidden={{ id: client.id }}
+            name={impact.clientName}
+            lines={[
+              impact.shoots ? `${t.danger.shoots}: ${impact.shoots}` : "",
+              impact.deliverables ? `${t.danger.deliverables}: ${impact.deliverables}` : "",
+              impact.events ? `${t.danger.events}: ${impact.events}` : "",
+              impact.contactsRemoved
+                ? `${t.danger.contactsRemoved}: ${impact.contactsRemoved}`
+                : "",
+              impact.contactsKept ? `${t.danger.contactsKept}: ${impact.contactsKept}` : "",
+            ].filter(Boolean)}
+            labels={{
+              zone: t.danger.zone,
+              action: t.danger.deleteClient,
+              irreversible: t.danger.irreversible,
+              willRemove: t.danger.willRemove,
+              nothingAttached: t.danger.nothingAttached,
+              willKeep: t.danger.willKeep,
+              typeToConfirm: t.danger.typeToConfirm,
+              alternative: t.danger.alternative,
+              cancel: t.common.cancel,
+              loading: t.common.saving,
+            }}
+          />
+        ) : null}
       </div>
     </div>
   );

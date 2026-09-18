@@ -3,7 +3,9 @@ import { getT } from "@/lib/i18n/server";
 import { requirePageRole } from "@/lib/auth/session";
 import { listUsers } from "@/lib/db/repo/users";
 import { listResources } from "@/lib/db/repo/resources";
+import { impactOfDeletingPerson } from "@/lib/db/repo/purge";
 import { ActionButton, ActionForm } from "@/components/ActionForm";
+import { DangerZone } from "@/components/DangerZone";
 import {
   Card,
   CardHeader,
@@ -16,6 +18,7 @@ import {
 } from "@/components/ui";
 import { createCrewAction } from "../resources/actions";
 import { resendInviteAction } from "../clients/actions";
+import { deletePersonAction } from "../danger-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +30,16 @@ export default async function CrewPage() {
     listUsers(ctx, "crew"),
     listResources(ctx, "person"),
   ]);
+
+  // Only an administrator may delete, so only an administrator is told what a
+  // delete would cost. One query per crew member, on a page that lists a team.
+  const impacts = new Map(
+    ctx.role === "admin"
+      ? (
+          await Promise.all(crew.map((member) => impactOfDeletingPerson(ctx, member.id)))
+        ).flatMap((impact, index) => (impact ? [[crew[index].id, impact] as const] : []))
+      : [],
+  );
 
   // The resource is what gets booked; the account is what signs in. They are
   // created together, so showing the craft here means reading it off the
@@ -83,6 +96,38 @@ export default async function CrewPage() {
                         fullName: member.fullName,
                       }}
                     />
+
+                    {impacts.has(member.id) ? (
+                      <div className="w-full">
+                        <DangerZone
+                          action={deletePersonAction}
+                          hidden={{ userId: member.id }}
+                          name={member.fullName}
+                          lines={[
+                            impacts.get(member.id)!.assignments
+                              ? `${t.danger.assignments}: ${impacts.get(member.id)!.assignments}`
+                              : "",
+                          ].filter(Boolean)}
+                          keeps={[
+                            impacts.get(member.id)!.shootsAttributed
+                              ? `${t.danger.shootsKept}: ${impacts.get(member.id)!.shootsAttributed}`
+                              : "",
+                          ].filter(Boolean)}
+                          labels={{
+                            zone: t.danger.zone,
+                            action: t.danger.deletePerson,
+                            irreversible: t.danger.irreversible,
+                            willRemove: t.danger.willRemove,
+                            nothingAttached: t.danger.nothingAttached,
+                            willKeep: t.danger.willKeep,
+                            typeToConfirm: t.danger.typeToConfirm,
+                            alternative: t.danger.alternative,
+                            cancel: t.common.cancel,
+                            loading: t.common.saving,
+                          }}
+                        />
+                      </div>
+                    ) : null}
                   </div>
                 );
               })}

@@ -88,6 +88,20 @@ export default async function ClientsPage() {
             <Field label={t.client.preferences} hint={t.client.preferencesHint}>
               <Textarea name="notes" rows={3} />
             </Field>
+
+            {/* The usual case is one company with one person at it, so the
+                contact is offered here rather than only on the client file. */}
+            <div className="border-t border-border pt-4">
+              <p className="mb-3 text-sm font-medium">{t.client.contactOptional}</p>
+              <div className="space-y-4">
+                <Field label={t.common.name}>
+                  <Input name="contactName" />
+                </Field>
+                <Field label={t.common.email} hint={t.client.contactHint}>
+                  <Input name="email" type="email" dir="ltr" className="text-start" />
+                </Field>
+              </div>
+            </div>
           </ActionForm>
         </Card>
       </div>

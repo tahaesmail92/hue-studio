@@ -41,9 +41,43 @@ export async function createClientAction(
   });
   if (!parsed.success) return { error: t.common.required };
 
-  await createClient(ctx, parsed.data);
+  // The contact is optional but expected: the usual case is one company with
+  // one person at it, and making that two steps on two screens is friction the
+  // spec did not ask for. Left blank, this just creates the company and the
+  // client file takes contacts later.
+  const email = text(formData, "email");
+  const contactName = text(formData, "contactName");
+
+  if (email && !z.string().email().safeParse(email).success) {
+    return { error: t.errors.invalidEmail };
+  }
+
+  const client = await createClient(ctx, parsed.data);
+
+  if (email) {
+    try {
+      const user = await createUser(ctx, {
+        email,
+        // Falling back to the company name keeps the invite addressed to
+        // someone rather than to nobody.
+        fullName: contactName ?? parsed.data.name,
+        role: "client",
+        clientIds: [client.id],
+      });
+      await sendInvite(user.id, user.email, user.fullName, user.locale, ctx.userId);
+    } catch (err) {
+      // 23505 is the unique violation on users.email. The company is already
+      // created, so say what actually happened rather than implying nothing did.
+      if ((err as { code?: string }).code === "23505") {
+        revalidatePath("/clients");
+        return { error: t.client.createdButEmailTaken };
+      }
+      throw err;
+    }
+  }
+
   revalidatePath("/clients");
-  return { ok: t.common.saved };
+  return { ok: email ? t.client.inviteSent : t.common.saved };
 }
 
 export async function updateClientAction(
