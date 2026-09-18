@@ -1,7 +1,20 @@
 # Deploying HUE Studio
 
-One Hostinger VPS, five containers, and a push-to-deploy pipeline. Caddy gets
-TLS certificates by itself; nothing needs a control panel after the first run.
+Three ways to run this, in the order you are most likely to want them.
+
+| Path | Buy a VPS | Administer a server | Database | Queue driver |
+|---|---|---|---|---|
+| **[Hostinger Web Apps + Neon](#alternative-hostinger-web-apps--neon)** | no | no | Neon | Hostinger cron |
+| [Vercel + Neon](#alternative-vercel--neon) | no | no | Neon | external pinger |
+| [VPS with Docker](#1-prepare-the-box) *(below)* | yes | yes | in the stack | the worker process |
+
+Whichever you pick, one thing does not change: **the database must be
+PostgreSQL.** What makes double booking impossible here is a Postgres
+exclusion constraint over a time range, and nothing in MySQL does that job.
+
+The VPS is what the system was built for — it runs the real worker process,
+takes its own nightly backups, and has no platform limits. The other two trade
+those for having no server to look after.
 
 ---
 
@@ -115,6 +128,96 @@ After that, every push to `main` runs the tests, the linter and a production
 build, and only then touches the box. The deploy builds, migrates, restarts,
 and waits on the container's own healthcheck — if the app does not come back,
 the run fails loudly with the last 80 log lines rather than going quiet.
+
+---
+
+## Alternative: Hostinger Web Apps + Neon
+
+No server to administer and no VPS to buy. Hostinger runs `next build` then
+`next start`; the database lives in Neon; a Hostinger cron drives the queue.
+
+**Hostinger hosts MySQL only** — PostgreSQL is not offered on its managed
+plans, and MySQL is not a substitute here. The constraint that makes
+double-booking impossible is a Postgres exclusion constraint over a time
+range, and MySQL has no equivalent. Replacing it would mean rewriting every
+migration and every query to end up with a weaker guarantee enforced in
+application code. So the database stays external; Hostinger supports exactly
+that, and has a connect wizard for it.
+
+### 1. A database, in the Neon project you already have
+
+One Neon project holds many databases, so this needs no new account, no new
+project, and runs into no plan limit: in the Neon console, **New Database**,
+name it `hue_studio`.
+
+Take the **pooled** connection string — the host ending `-pooler`.
+
+Do not reuse the connection string another app is using. Pointing this one at
+it would create these tables inside that app's live database.
+
+### 2. Migrate and seed
+
+From your laptop, with `DATABASE_URL` in `.env` pointing at the new database:
+
+```bash
+npm run db:migrate
+npm run db:seed -- you@huecreative.agency "Your Name"
+```
+
+The seed prints an invite link. Open it and choose a password.
+
+### 3. Deploy
+
+Import the repository in hPanel → **Web Apps**, framework preset **Next.js**,
+branch `main`. It runs `npm run build` and then `npm start`, which is why
+`output: "standalone"` is gated behind `DOCKER_BUILD` — standalone is for the
+Docker image and would leave Hostinger with no server to start.
+
+Environment variables:
+
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | the Neon **pooled** string |
+| `APP_URL` | the real public URL — it goes into every invite and confirmation link |
+| `CRON_SECRET` | `openssl rand -hex 32` |
+| `EMAIL_FROM` · `ADMIN_EMAIL` | as elsewhere |
+| `RESEND_API_KEY` | optional — without it sends are logged `skipped` and nothing breaks |
+| `DEFAULT_TIMEZONE` · `DEFAULT_LOCALE` | `Africa/Cairo` · `ar` |
+
+**Test this first, before anything else:** open `/api/health`.
+
+- `{"ok":true}` — Node is running and the database is reachable. Done.
+- `{"ok":false}` — Node is running, the database is not. It is `DATABASE_URL`.
+- A 404 or a plain HTML page — the plan is not running Next as a server at
+  all, and no amount of configuration will fix that. Stop here.
+
+That last case is what happens on PHP-only shared hosting, and it has cost a
+day before. It is a thirty-second check.
+
+### 4. Drive the queue
+
+There is no worker process, and **every email in this system is queued** — so
+without this step invite emails never leave and nobody can activate an
+account.
+
+In hPanel → **Cron Jobs**, add a *custom* command every 5 minutes:
+
+```bash
+curl -fsS -H "Authorization: Bearer YOUR_CRON_SECRET" https://YOUR_DOMAIN/api/cron/tick
+```
+
+Without that header the route answers **404**, not 401 — it does not confirm
+it exists to anyone who has not got the secret.
+
+Five minutes is fine for invitations and confirmations. It also sets how late
+a reminder can be: an offset of 24 hours fires within five minutes of that
+mark, which does not matter for a shoot tomorrow morning.
+
+### What this path gives up
+
+- **No nightly `pg_dump`.** Neon keeps its own history, on its own terms.
+- **Reminders are only as punctual as the cron interval.**
+- Scaling is whatever the hosting plan allows, rather than a box you control.
 
 ---
 
