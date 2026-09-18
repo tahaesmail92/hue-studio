@@ -42,7 +42,7 @@ ufw allow OpenSSH && ufw allow 80 && ufw allow 443 && ufw --force enable
 
 ```bash
 su - deploy
-git clone https://github.com/YOUR_USER/hue-studio.git /home/deploy/hue-studio
+git clone https://github.com/tahaesmail92/hue-studio.git /home/deploy/hue-studio
 cd /home/deploy/hue-studio
 cp .env.example .env
 nano .env
