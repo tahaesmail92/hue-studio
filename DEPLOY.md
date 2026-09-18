@@ -118,6 +118,78 @@ the run fails loudly with the last 80 log lines rather than going quiet.
 
 ---
 
+## Alternative: Vercel + Neon
+
+No server to run, at the cost of one real compromise: **there is no worker
+process.** Every email in this system is queued and sent by the worker, so
+without something driving the queue, invite emails never leave — and nobody
+can activate an account. `/api/cron/tick` is that driver: one turn of the
+worker loop, over HTTP.
+
+### 1. A database of its own
+
+Create a **new database** in Neon — not the one hue-systems uses. Pointing
+this app at that connection string would create its tables inside a live
+production database.
+
+Use the **pooled** connection string (the host ending `-pooler`): serverless
+functions open a connection per instance, and the direct endpoint runs out.
+
+### 2. Import and configure
+
+Import `tahaesmail92/hue-studio` in Vercel, then set the environment
+variables:
+
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | the Neon **pooled** string |
+| `APP_URL` | the deployment URL — this goes into every invite and confirmation link |
+| `CRON_SECRET` | `openssl rand -hex 32` |
+| `EMAIL_FROM` · `ADMIN_EMAIL` | as on the VPS |
+| `RESEND_API_KEY` | optional — without it, sends are logged as `skipped` and nothing breaks |
+| `DEFAULT_TIMEZONE` · `DEFAULT_LOCALE` | `Africa/Cairo` · `ar` |
+
+### 3. Migrate and seed
+
+From your laptop, with `DATABASE_URL` pointing at the Neon database:
+
+```bash
+npm run db:migrate
+npm run db:seed -- you@huecreative.agency "Your Name"
+```
+
+The seed prints the invite link. Open it and choose a password.
+
+### 4. Drive the queue
+
+`vercel.json` schedules the tick **daily**, because that is the only
+frequency every Vercel plan accepts — a sub-daily schedule is rejected on the
+free plan and fails the deploy outright. Once a day is far too slow for a
+queue that carries invite emails.
+
+So for anything beyond a look around, point a free external pinger
+(cron-job.org and similar) at it every minute:
+
+```
+GET https://YOUR-APP.vercel.app/api/cron/tick
+Authorization: Bearer <CRON_SECRET>
+```
+
+Without the header the route answers **404**, not 401 — it does not confirm it
+exists to anyone who has not got the secret.
+
+### What this path gives up
+
+- **Reminders are only as punctual as the pinger.** The VPS worker ticks every
+  minute by itself.
+- **No nightly `pg_dump`.** Neon has its own history, on its own terms.
+- Long PDF renders and the queue share a function's duration limit, where the
+  VPS has neither constraint.
+
+It is a good way to see the system working. The VPS is what it was built for.
+
+---
+
 ## Backups
 
 `docker/backup.sh` runs as its own container and takes a nightly `pg_dump`

@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/cron/tick",
+      "_comment": "Daily, because that is the one frequency every Vercel plan accepts - a sub-daily schedule is rejected on the free plan and fails the deploy. Once a day is far too slow for this queue, so drive /api/cron/tick every minute from an external pinger instead, or raise this once the plan allows it. See DEPLOY.md.",
+      "schedule": "0 3 * * *"
+    }
+  ]
+}

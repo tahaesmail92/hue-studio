@@ -1,0 +1,88 @@
+# The GitLab equivalent of .github/workflows/deploy.yml.
+#
+# Same shape and same guarantees: nothing reaches the VPS until the tests, the
+# linter and a real production build have all passed.
+#
+# Set up in Settings -> CI/CD -> Variables:
+#   VPS_HOST         the VPS IP
+#   VPS_USER         deploy
+#   VPS_SSH_KEY      the private key, type "File", NOT protected
+#   VPS_APP_DIR      /home/deploy/hue-studio
+#   DEPLOY_ENABLED   true      (leave unset until the box exists)
+
+stages: [test, deploy]
+
+default:
+  image: node:24-alpine
+  # npm's cache, not node_modules: `npm ci` deletes node_modules by design, so
+  # caching it would be thrown away on every run.
+  cache:
+    key:
+      files: [package-lock.json]
+    paths: [.npm/]
+
+variables:
+  NEXT_TELEMETRY_DISABLED: "1"
+  npm_config_cache: "$CI_PROJECT_DIR/.npm"
+
+test:
+  stage: test
+  script:
+    - npm ci
+    # Replays every migration into PGlite - a real Postgres compiled to WASM -
+    # so no service container and no database credentials are needed. This is
+    # where the no-double-booking constraint is proved.
+    - npm test
+    - npm run lint
+    # Every secret is read lazily at request time, so the build needs none.
+    - npm run build
+
+deploy:
+  stage: deploy
+  needs: [test]
+  rules:
+    # Unset DEPLOY_ENABLED means "the VPS does not exist yet" - the pipeline
+    # stays green instead of failing on a deploy nobody configured.
+    - if: $CI_COMMIT_BRANCH == "main" && $DEPLOY_ENABLED == "true"
+  # One deploy at a time; a newer pipeline waits rather than racing a migration.
+  resource_group: production
+  image: alpine:3
+  before_script:
+    - apk add --no-cache openssh-client
+    - chmod 600 "$VPS_SSH_KEY"
+    - mkdir -p ~/.ssh
+    # Pin the host key on first contact and reuse it afterwards, so a swapped
+    # host is a failed deploy rather than a silent one.
+    - ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+  script:
+    - |
+      ssh -i "$VPS_SSH_KEY" "$VPS_USER@$VPS_HOST" bash -s <<SSH
+        set -euo pipefail
+        cd "$VPS_APP_DIR"
+
+        git fetch --all
+        git reset --hard origin/main
+
+        # Build first, migrate second, restart last. A failed build must not
+        # leave the box with a migrated database and the old code.
+        docker compose build web worker
+        docker compose run --rm web node db/migrate.mjs
+        docker compose up -d
+
+        # Wait on the CONTAINER's healthcheck, not a host port: only Caddy is
+        # published, so 127.0.0.1:3000 would never answer from the host.
+        container="\$(docker compose ps -q web)"
+        for attempt in \$(seq 1 60); do
+          state="\$(docker inspect -f '{{.State.Health.Status}}' "\$container" 2>/dev/null || echo starting)"
+          if [ "\$state" = "healthy" ]; then
+            echo "web is healthy after \${attempt}s"
+            exit 0
+          fi
+          if [ "\$state" = "unhealthy" ]; then break; fi
+          sleep 1
+        done
+
+        echo "the app did not become healthy" >&2
+        docker compose logs --tail=80 web >&2
+        exit 1
+      SSH
