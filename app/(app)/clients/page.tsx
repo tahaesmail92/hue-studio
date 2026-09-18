@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getT } from "@/lib/i18n/server";
+import { env } from "@/lib/env";
 import { requirePageRole } from "@/lib/auth/session";
 import { listClients } from "@/lib/db/repo/clients";
 import { ActionForm } from "@/components/ActionForm";
@@ -75,7 +76,8 @@ export default async function ClientsPage() {
               <Input name="sector" />
             </Field>
             <Field label={t.client.timezone}>
-              <Select name="timezone" defaultValue="Africa/Cairo">
+              {/* Pre-selects the zone most of this agency's clients are in. */}
+              <Select name="timezone" defaultValue={env.defaultTimezone}>
                 {TIMEZONES.map((zone) => (
                   <option key={zone.value} value={zone.value}>
                     {zone[locale]}

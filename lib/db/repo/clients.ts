@@ -1,4 +1,5 @@
 import { one, query } from "../index.ts";
+import { env } from "../../env.ts";
 import type { ClientStatus, Ctx } from "../../types.ts";
 import { assertClientAccess, assertStaff } from "../../types.ts";
 
@@ -70,9 +71,13 @@ export async function createClient(
 
   const row = await one<Client>(
     `insert into clients (name, slug, sector, timezone, notes)
-     values ($1, $2, $3, coalesce($4, 'Africa/Cairo'), $5)
+     values ($1, $2, $3, coalesce($4, $6), $5)
      returning ${COLUMNS}`,
-    [input.name.trim(), slug, input.sector ?? null, input.timezone ?? null, input.notes ?? null],
+    [
+      input.name.trim(), slug, input.sector ?? null,
+      input.timezone ?? null, input.notes ?? null,
+      env.defaultTimezone,
+    ],
   );
   return row!;
 }

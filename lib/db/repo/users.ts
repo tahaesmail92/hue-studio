@@ -1,5 +1,6 @@
 import { one, query, tx } from "../index.ts";
 import type { Craft, Ctx, Locale, Role } from "../../types.ts";
+import { env } from "../../env.ts";
 import { assertStaff, ForbiddenError } from "../../types.ts";
 
 export type UserRow = {
@@ -153,7 +154,7 @@ export async function createUser(ctx: Ctx, input: NewUser): Promise<User> {
   return tx(async (client) => {
     const inserted = await client.query<UserRow>(
       `insert into users (email, full_name, role, locale, timezone, phone)
-       values ($1, $2, $3::user_role, coalesce($4::user_locale, 'ar'), coalesce($5, 'Africa/Cairo'), $6)
+       values ($1, $2, $3::user_role, coalesce($4::user_locale, 'ar'), coalesce($5, $7), $6)
        returning ${COLUMNS}`,
       [
         input.email.trim(),
@@ -162,6 +163,7 @@ export async function createUser(ctx: Ctx, input: NewUser): Promise<User> {
         input.locale ?? null,
         input.timezone ?? null,
         input.phone ?? null,
+        env.defaultTimezone,
       ],
     );
     const user = inserted.rows[0];

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getT } from "@/lib/i18n/server";
+import { env } from "@/lib/env";
 import { requireStaff } from "@/lib/auth/session";
 import { addContact, createClient, updateClient } from "@/lib/db/repo/clients";
 import { createUser } from "@/lib/db/repo/users";
@@ -35,7 +36,7 @@ export async function createClientAction(
   const parsed = clientSchema.safeParse({
     name: formData.get("name"),
     sector: text(formData, "sector"),
-    timezone: text(formData, "timezone") ?? "Africa/Cairo",
+    timezone: text(formData, "timezone") ?? env.defaultTimezone,
     notes: text(formData, "notes"),
   });
   if (!parsed.success) return { error: t.common.required };
