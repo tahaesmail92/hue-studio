@@ -150,7 +150,13 @@ One Neon project holds many databases, so this needs no new account, no new
 project, and runs into no plan limit: in the Neon console, **New Database**,
 name it `hue_studio`.
 
-Take the **pooled** connection string — the host ending `-pooler`.
+Take the **direct** connection string, and end it with
+`?sslmode=verify-full`.
+
+Not the pooled one: Hostinger runs `next start` as a long-lived process with
+a single connection pool, so pooling on Neon's side buys nothing here. The
+pooled endpoint is for serverless, where every invocation opens its own
+connections.
 
 Do not reuse the connection string another app is using. Pointing this one at
 it would create these tables inside that app's live database.
