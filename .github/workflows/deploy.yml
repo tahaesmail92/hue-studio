@@ -32,7 +32,14 @@ jobs:
 
   deploy:
     needs: test
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # DEPLOY_ENABLED is a repository *variable*, not a secret: secrets are not
+    # readable in a job-level `if`, and without this guard every push before the
+    # VPS exists ends in a red cross for a deploy that was never configured.
+    # Set it to "true" once the box is up - see DEPLOY.md.
+    if: >-
+      github.ref == 'refs/heads/main'
+      && github.event_name == 'push'
+      && vars.DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-latest
     # One deploy at a time, and a newer push waits rather than racing an
     # in-flight migration.

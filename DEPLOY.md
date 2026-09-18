@@ -104,6 +104,13 @@ add four repository secrets:
 | `VPS_SSH_KEY` | the **private** key whose public half is in `deploy`'s `authorized_keys` |
 | `VPS_APP_DIR` | `/home/deploy/hue-studio` |
 
+Then, under **Variables**, add `DEPLOY_ENABLED` = `true`.
+
+That switch is a variable rather than a secret on purpose: a job-level `if`
+cannot read secrets, so without it every push made before the VPS existed would
+end in a red cross for a deploy that was never configured. Tests still run on
+every push either way.
+
 After that, every push to `main` runs the tests, the linter and a production
 build, and only then touches the box. The deploy builds, migrates, restarts,
 and waits on the container's own healthcheck — if the app does not come back,
