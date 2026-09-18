@@ -10,7 +10,7 @@ import {
 import type { Locale } from "../types.ts";
 
 // Amiri, bundled rather than fetched: it shapes Arabic correctly in
-// @react-pdf, which the UI webfonts do not do inside a PDF. next.config.ts
+// @react-pdf, which the UI webfonts do not do inside a PDF. next.config.mjs
 // keeps these files in the standalone build.
 const FONT_DIR = path.join(process.cwd(), "lib", "pdf", "fonts");
 
