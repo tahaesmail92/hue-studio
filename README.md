@@ -144,7 +144,8 @@ bundler.
 ## Deployment
 
 One Hostinger VPS, five containers: `postgres`, `web`, `worker`, `caddy`,
-`backup`. Caddy gets TLS automatically.
+`backup`. Caddy gets TLS automatically. Pushing to `main` runs the tests and
+deploys. **The full runbook is [DEPLOY.md](DEPLOY.md)**; the short version:
 
 ```bash
 # on the VPS

@@ -1,0 +1,80 @@
+name: Test and deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # The suite replays every migration into PGlite - a real Postgres
+      # compiled to WASM - so it needs no service container and no secrets.
+      # This is where the no-double-booking constraint is proved.
+      - run: npm test
+
+      - run: npm run lint
+
+      # A build failure must never reach the box. Every secret is read lazily
+      # at request time, so the build needs none of them.
+      - run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    # One deploy at a time, and a newer push waits rather than racing an
+    # in-flight migration.
+    concurrency:
+      group: production
+      cancel-in-progress: false
+
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            cd "${{ secrets.VPS_APP_DIR }}"
+
+            git fetch --all
+            git reset --hard origin/main
+
+            # Build first, migrate second, restart last. A failed build must
+            # not leave the box with a migrated database and the old code.
+            docker compose build web worker
+            docker compose run --rm web node db/migrate.mjs
+            docker compose up -d
+
+            # Wait on the CONTAINER's own healthcheck rather than curling a
+            # host port: only Caddy is published to the host, so 127.0.0.1:3000
+            # would never answer from here.
+            container="$(docker compose ps -q web)"
+            for attempt in $(seq 1 60); do
+              state="$(docker inspect -f '{{.State.Health.Status}}' "$container" 2>/dev/null || echo starting)"
+              if [ "$state" = "healthy" ]; then
+                echo "web is healthy after ${attempt}s"
+                exit 0
+              fi
+              if [ "$state" = "unhealthy" ]; then break; fi
+              sleep 1
+            done
+
+            echo "the app did not become healthy" >&2
+            docker compose logs --tail=80 web >&2
+            exit 1
